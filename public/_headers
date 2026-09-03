@@ -1,0 +1,14 @@
+# WebMCP requires both of these to work on a deployed origin:
+#   Origin-Agent-Cluster: ?1   the API is only exposed in an origin-isolated document
+#   Permissions-Policy: tools  the feature is policy-gated; without it `registerTool`
+#                              rejects with NotAllowedError and an agent sees no tools at all
+# `self` keeps the tools same-origin: nothing here is exposed to embedders or other sites.
+/*
+  Origin-Agent-Cluster: ?1
+  Permissions-Policy: tools=(self)
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+
+# The dataset is content-addressed by release and never mutated in place.
+/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

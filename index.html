@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PaleoScope — an ancient-DNA workbench humans and agents share</title>
+    <meta
+      name="description"
+      content="Map, PCA and timeline over 22,202 ancient and present-day human genomes from the
+               Allen Ancient DNA Resource. You select points by eye; the agent reads your
+               selection through WebMCP and tells you what they are."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232a78d6'/%3E%3Ccircle cx='22' cy='11' r='4' fill='%23eb6834'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <datalist id="population-options"></datalist>
+
+    <header class="app-header">
+      <div class="brand">
+        <h1>PaleoScope</h1>
+      </div>
+
+      <div class="agent-status" id="agent-status" role="status" hidden>
+        <span class="dot" aria-hidden="true"></span>
+        <span class="agent-status-text">WebMCP not available in this browser</span>
+      </div>
+
+      <button
+        type="button"
+        class="info-button"
+        id="info-button"
+        aria-label="Dataset information"
+        title="Dataset information"
+      >i</button>
+
+      <div class="header-controls">
+        <label class="control">
+          <span>PCA basis</span>
+          <select id="basis"></select>
+        </label>
+        <button type="button" id="undo" disabled>Undo</button>
+        <button type="button" id="clear">Clear filters</button>
+        <button type="button" id="workspace-button">Workspace</button>
+        <button type="button" class="icon-button theme-toggle" id="theme" aria-label="Toggle theme" title="Toggle theme">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path></svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 15.4A9 9 0 0 1 8.6 3.3 9 9 0 1 0 20.7 15.4Z"></path></svg>
+        </button>
+      </div>
+
+    </header>
+
+    <dialog class="info-dialog" id="info-dialog" aria-labelledby="info-title">
+      <div class="info-dialog-head">
+        <h2 id="info-title">Dataset information</h2>
+        <button type="button" class="dialog-close" id="info-close" aria-label="Close">×</button>
+      </div>
+      <div class="info-dialog-body">
+        <p id="status-line">Loading…</p>
+        <p id="citation" class="muted"></p>
+        <h3>Interaction</h3>
+        <p class="muted">
+          <strong>Where</strong> and <strong>Who</strong> — drag to lasso individuals;
+          in Where, alt-drag instead to filter by region.
+          <strong>When</strong> — drag across to filter by age; one dot per individual,
+          with present-day individuals in the left gutter and anything older than 12,000 BP
+          in the right one.
+          Everywhere: <strong>double-click and hold</strong> to pan,
+          <strong>scroll</strong> to zoom, and <strong>right-click</strong> to clear the
+          selection.
+        </p>
+        <h3>Layout</h3>
+        <p class="muted">
+          Drag the dividers to resize panels, drag a panel’s ⠿ grip onto another to swap them,
+          or double-click any divider to restore the default layout.
+        </p>
+        <button type="button" id="reset-layout">Reset layout</button>
+      </div>
+    </dialog>
+
+    <dialog class="info-dialog workspace-dialog" id="workspace-dialog" aria-labelledby="workspace-title">
+      <div class="info-dialog-head">
+        <h2 id="workspace-title">Workspace and local data</h2>
+        <button type="button" class="dialog-close" id="workspace-close" aria-label="Close">×</button>
+      </div>
+      <div class="workspace-body">
+        <section>
+          <h3>Reproducible workspace</h3>
+          <p class="muted">Includes filters, selection, cohorts, comparison, findings, history, layout and panel viewports.</p>
+          <div class="dialog-actions"><form id="workspace-export-form" toolname="export_workspace" tooldescription="Download the complete local PaleoScope workspace, including cohorts, findings, filters, history, layout and panel viewports, as JSON."><button type="submit" id="workspace-download">Download workspace</button></form><label class="file-button">Restore workspace<input type="file" id="workspace-file" accept="application/json,.json" /></label><button type="button" id="copy-view-link">Copy view link</button></div>
+        </section>
+        <section>
+          <h3>Local sample overlay</h3>
+          <p class="muted">CSV/TSV/Eigenvec stays in this tab. Required: geneticId, id, sample or IID. Optional: population, dateBP, dateSD, lat, lon, pc1, pc2, basis, snpsHit, haplogroups, publication and DOI.</p>
+          <div class="dialog-actions"><label class="file-button">Import local samples<input type="file" id="samples-file" accept="text/csv,text/tab-separated-values,text/plain,.csv,.tsv,.eigenvec" /></label><button type="button" id="samples-clear" disabled>Remove local samples</button></div>
+        </section>
+        <section>
+          <h3>Dataset release</h3>
+          <p class="muted">Load another PaleoScope columnar dataset JSON locally. Existing cohorts are reset because their row indices belong to the previous release.</p>
+          <label class="file-button">Load dataset JSON<input type="file" id="dataset-file" accept="application/json,.json" /></label>
+        </section>
+        <section>
+          <h3>Research report</h3>
+          <form id="report-form" toolname="export_research_report" tooldescription="Export the visible PaleoScope research state, saved cohorts, comparison and findings as a local Markdown report.">
+            <label class="control"><span>Title</span><input name="title" value="PaleoScope research report" /></label>
+            <button type="submit">Download Markdown report</button>
+          </form>
+        </section>
+        <p id="workspace-status" class="muted" role="status"></p>
+      </div>
+    </dialog>
+
+    <main class="app-grid" id="app-grid">
+      <div class="splitter splitter-v" id="split-v1" role="separator"
+           aria-orientation="vertical" aria-label="Resize the two upper panels"></div>
+      <div class="splitter splitter-v" id="split-v2" role="separator"
+           aria-orientation="vertical" aria-label="Resize the sidebar"></div>
+      <div class="splitter splitter-h" id="split-h" role="separator"
+           aria-orientation="horizontal" aria-label="Resize the lower panel"></div>
+
+      <section class="panel panel-map" id="panel-map" aria-labelledby="map-title">
+        <div class="panel-head">
+          <h2 id="map-title">Where</h2>
+          <button type="button" class="panel-action" id="reset-map">Reset view</button>
+        </div>
+        <div class="plot" id="map-plot"></div>
+      </section>
+
+      <section class="panel panel-pca" id="panel-pca" aria-labelledby="pca-title">
+        <div class="panel-head">
+          <h2 id="pca-title">Who</h2>
+          <p class="panel-note" id="pca-note" aria-live="polite"></p>
+          <button type="button" class="panel-action" id="reset-pca">Reset view</button>
+        </div>
+        <div class="plot" id="pca-plot"></div>
+        <div class="legend" id="legend" aria-label="Colour key"></div>
+      </section>
+
+      <section class="panel panel-timeline" id="panel-timeline" aria-labelledby="timeline-title">
+        <div class="panel-head">
+          <h2 id="timeline-title">When</h2>
+          <button type="button" class="panel-action" id="reset-timeline">Reset view</button>
+        </div>
+        <div class="plot plot-short" id="timeline-plot"></div>
+      </section>
+
+      <aside class="panel panel-side" id="panel-side" aria-label="Inspector">
+        <div class="side-head">
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" id="tab-selection" aria-selected="true">Selection</button>
+            <button type="button" role="tab" id="tab-table" aria-selected="false">Table</button>
+            <button type="button" role="tab" id="tab-compare" aria-selected="false">Compare</button>
+            <button type="button" role="tab" id="tab-filters" aria-selected="false">Filters</button>
+            <button type="button" role="tab" id="tab-findings" aria-selected="false">Findings</button>
+            <button type="button" role="tab" id="tab-agent" aria-selected="false">Agent</button>
+          </div>
+          <button type="button" class="icon-button expand-panel" id="expand-inspector" aria-label="Expand inspector panel" title="Expand panel" aria-pressed="false">
+            <svg class="expand-icon expand-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>
+            <svg class="expand-icon expand-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8H3V3M16 8h5V3M8 16H3v5M16 16h5v5"></path></svg>
+          </button>
+        </div>
+
+        <div class="tab-panel" id="pane-inspector"></div>
+
+        <div class="tab-panel" id="pane-agent" hidden></div>
+        <div class="tab-panel" id="pane-compare" hidden></div>
+        <div class="tab-panel" id="pane-filters" hidden>
+          <div class="panel-subhead"><h3>Explore and filter</h3></div>
+          <form class="filter-form" id="filters-form">
+            <label class="control"><span>Population</span><select name="population"><option value="">Any population</option></select></label>
+            <label class="control"><span>Locality</span><select name="locality"><option value="">Any locality</option></select></label>
+            <label class="control"><span>Publication</span><select name="publication"><option value="">Any publication</option></select></label>
+            <label class="control"><span>Date method</span><select name="dateMethod"><option value="">Any date method</option></select></label>
+            <label class="control"><span>From BP</span><input type="number" name="fromBP" min="0" max="100000" /></label>
+            <label class="control"><span>To BP</span><input type="number" name="toBP" min="0" max="100000" /></label>
+            <label class="control">
+              <span>Date matching</span>
+              <select name="dateMode">
+                <option value="point">Central estimate</option>
+                <option value="overlap">Uncertainty overlaps range</option>
+                <option value="contained">Uncertainty contained in range</option>
+              </select>
+            </label>
+            <label class="control"><span>Minimum SNPs</span><input type="number" name="minSnps" min="0" /></label>
+            <label class="control"><span>mtDNA haplogroup</span><select name="mtHaplogroup"><option value="">Any mtDNA haplogroup</option></select></label>
+            <label class="control"><span>Y haplogroup</span><select name="yHaplogroup"><option value="">Any Y haplogroup</option></select></label>
+            <label class="control"><span>Molecular sex</span><select name="molecularSex"><option value="">Any molecular sex</option></select></label>
+            <label class="control">
+              <span>Era</span>
+              <select name="era"><option value="both">Ancient and present</option><option value="ancient">Ancient</option><option value="present">Present-day</option></select>
+            </label>
+            <div class="quality-field">
+              <input type="checkbox" id="pass-only" name="passOnly" />
+              <label for="pass-only">Quality assessment starts with Pass</label>
+            </div>
+            <div class="dialog-actions">
+              <button type="button" data-action="reset">Reset all</button>
+              <button type="submit">Apply filters</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-panel research-pane" id="pane-findings" hidden>
+          <div id="sets-list"></div>
+          <div id="notes-list"></div>
+
+          <form id="save-set-form" class="compact-form">
+            <label class="control"><span>Save current selection</span><input name="name" placeholder="Cohort name" required maxlength="60" /></label>
+            <button type="submit">Save</button>
+          </form>
+
+          <form id="note-form" class="note-form">
+            <label class="control"><span>Finding</span><input name="text" placeholder="Write an observation…" required maxlength="600" /></label>
+            <select name="kind" aria-label="Finding type"><option value="observation">Observation</option><option value="hypothesis">Hypothesis</option><option value="caveat">Caveat</option></select>
+            <select name="status" aria-label="Finding status"><option value="open">Open</option><option value="supported">Supported</option><option value="rejected">Rejected</option></select>
+            <input name="tags" placeholder="tags, comma-separated" aria-label="Finding tags" />
+            <button type="submit">Add</button>
+          </form>
+
+          <!--
+            One flow deliberately uses WebMCP's declarative form API rather than the
+            imperative one: the same <form> a person submits is also the tool the agent
+            calls, and `event.agentInvoked` tells the handler which of the two happened.
+          -->
+          <form
+            id="export-form"
+            toolname="export_data"
+            tooldescription="Export the current selection, visible samples, or a saved cohort as a local CSV or JSON file through the visible export form."
+            action="#export"
+          >
+            <label class="control">
+              <span>Export selection</span>
+              <input
+                type="text"
+                name="filename"
+                value="paleoscope-selection"
+                toolparamdescription="Base name for the downloaded CSV file, without an extension."
+              />
+            </label>
+            <label class="control"><span>Scope</span><select name="scope" id="export-scope"><option value="selection">Selection</option><option value="visible">Visible</option></select></label>
+            <label class="control"><span>Format</span><select name="format"><option value="csv">CSV</option><option value="json">JSON</option></select></label>
+            <button type="submit">Download</button>
+          </form>
+        </div>
+      </aside>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

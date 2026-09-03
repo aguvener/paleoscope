@@ -1,0 +1,548 @@
+[
+  {
+    "name": "Orient before acting",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "What am I looking at? Start from scratch."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "read_state",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Read the scatter the user can see",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Describe the shape of the PCA scatter plot."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "read_plot",
+        "arguments": {
+          "panel": "pca"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Think before changing the shared screen",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Before you change anything on my screen, how many individuals would be left if we narrowed to Anatolia between 9000 and 7000 years BP?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "set_filter",
+        "arguments": {
+          "dryRun": true,
+          "region": "anatolia",
+          "fromBP": {
+            "$gte": 7000
+          },
+          "toBP": {
+            "$lte": 9000
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "Filter to the Anatolian Neolithic window",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Show me Anatolia between 9000 and 7000 years before present."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "set_filter",
+        "arguments": {
+          "region": "anatolia",
+          "fromBP": {
+            "$gte": 7000
+          },
+          "toBP": {
+            "$lte": 9000
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "Restrict to well covered ancient individuals",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Only keep ancient samples that pass quality assessment and have at least 30000 SNPs."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "set_filter",
+        "arguments": {
+          "era": "ancient",
+          "passOnly": true,
+          "minSnps": {
+            "$gte": 30000
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "Find a population by name rather than guessing an index",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Which populations have Yamnaya in their name?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "find_populations",
+        "arguments": {
+          "query": {
+            "$contains": "amnaya"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "Profile a named population",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Tell me about the Turkey_N population."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "read_population_profile",
+        "arguments": {
+          "population": {
+            "$contains": "Turkey_N"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "Build a cohort, then explain it",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Gather the Yamnaya_Samara individuals into a cohort and tell me what they are."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "build_cohort",
+        "arguments": {
+          "population": {
+            "$contains": "Yamnaya"
+          },
+          "name": "Yamnaya cohort"
+        }
+      },
+      {
+        "functionName": "explain_set",
+        "arguments": {
+          "set": "s1"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Look up one individual by its identifier",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "What do we know about sample I0723.AG?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "read_sample",
+        "arguments": {
+          "geneticId": "I0723.AG"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Nearest neighbours in PCA space",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Which individuals sit closest to I0723.AG in the PCA?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "find_neighbours",
+        "arguments": {
+          "geneticId": "I0723.AG"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Switch the PCA basis",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Switch to the global PCA basis."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "set_basis",
+        "arguments": {
+          "basis": "global"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Clear filters rather than fighting them",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Start over, remove every filter."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "clear_filters",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Record a finding in the journal",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Note down as a hypothesis that the Anatolian samples look tightly clustered."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "note",
+        "arguments": {
+          "text": {
+            "$type": "string"
+          },
+          "kind": "hypothesis"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Cohort arithmetic instead of refiltering",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Make one cohort of ancient Anatolian samples and another of ancient Levantine ones, then give me everything in the first that is not in the second."
+      }
+    ],
+    "expectedCall": [
+      {
+        "unordered": [
+          {
+            "functionName": "build_cohort",
+            "arguments": {
+              "region": "anatolia",
+              "name": "Anatolia ancient"
+            }
+          },
+          {
+            "functionName": "build_cohort",
+            "arguments": {
+              "region": "the-levant",
+              "name": "Levant ancient"
+            }
+          }
+        ]
+      },
+      {
+        "functionName": "combine_sets",
+        "arguments": {
+          "op": "minus",
+          "a": "s1",
+          "b": "s2"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Export goes through the visible form",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Download the visible samples as a CSV."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "export_data",
+        "arguments": {
+          "scope": "visible",
+          "format": "csv"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Read the timeline the user can see",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "How are the sample dates distributed over time?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "read_timeline",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Find publications by author",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Which publications by Mathieson are in this dataset?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "find_publications",
+        "arguments": {
+          "query": {
+            "$contains": "athieson"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "Find individuals that sit apart from their own population",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Which individuals are outliers within their own population?"
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "find_outliers",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Selection becomes a handle the agent can read",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Select the Yamnaya_Samara individuals, then tell me what is in the selection."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "select",
+        "arguments": {
+          "population": {
+            "$contains": "Yamnaya"
+          }
+        }
+      },
+      {
+        "functionName": "read_selection",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Focus one individual so the panels centre on it",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Take me to sample I0723.AG on the map."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "focus_sample",
+        "arguments": {
+          "geneticId": "I0723.AG"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Name a cohort so it survives the session",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Build a cohort of ancient Anatolian samples and save it as 'Anatolia ancient'."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "build_cohort",
+        "arguments": {
+          "region": "anatolia",
+          "name": "Anatolia ancient"
+        }
+      },
+      {
+        "functionName": "save_set",
+        "arguments": {
+          "set": "s1",
+          "name": "Anatolia ancient"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Undo a change the agent just made",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Filter to Europe, then undo that \u2014 I changed my mind."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "set_filter",
+        "arguments": {
+          "region": "europe"
+        }
+      },
+      {
+        "functionName": "undo",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Compare two saved cohorts",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Save ancient Anatolian samples as 'Anatolia' and ancient Levantine ones as 'Levant', then compare them."
+      }
+    ],
+    "expectedCall": [
+      {
+        "unordered": [
+          {
+            "functionName": "build_cohort",
+            "arguments": {
+              "region": "anatolia",
+              "name": "Anatolia ancient"
+            }
+          },
+          {
+            "functionName": "build_cohort",
+            "arguments": {
+              "region": "the-levant",
+              "name": "Levant ancient"
+            }
+          }
+        ]
+      },
+      {
+        "functionName": "save_set",
+        "arguments": {
+          "set": "s1",
+          "name": "Anatolia"
+        }
+      },
+      {
+        "functionName": "save_set",
+        "arguments": {
+          "set": "s2",
+          "name": "Levant"
+        }
+      },
+      {
+        "functionName": "compare_sets",
+        "arguments": {
+          "a": "s1",
+          "b": "s2",
+          "show": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "Export the research report through its visible form",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Write out the research report as Markdown."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "export_research_report",
+        "arguments": {}
+      }
+    ]
+  },
+  {
+    "name": "Save the whole workspace through its visible form",
+    "messages": [
+      {
+        "role": "user",
+        "type": "message",
+        "content": "Save my whole workspace to a file so I can come back to it."
+      }
+    ],
+    "expectedCall": [
+      {
+        "functionName": "export_workspace",
+        "arguments": {}
+      }
+    ]
+  }
+]
