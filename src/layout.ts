@@ -18,7 +18,7 @@ const STORAGE_KEY = 'paleoscope.layout.v1';
 const DEFAULTS = {
   frA: 1,
   frB: 1.15,
-  sideWidth: 380,
+  sideWidth: 420,
   frTop: 1,
   frBottom: 0.42,
 };

@@ -146,13 +146,13 @@
 
       <aside class="panel panel-side" id="panel-side" aria-label="Inspector">
         <div class="side-head">
-          <div class="tabs" role="tablist">
-            <button type="button" role="tab" id="tab-selection" aria-selected="true">Selection</button>
-            <button type="button" role="tab" id="tab-table" aria-selected="false">Table</button>
-            <button type="button" role="tab" id="tab-compare" aria-selected="false">Compare</button>
-            <button type="button" role="tab" id="tab-filters" aria-selected="false">Filters</button>
-            <button type="button" role="tab" id="tab-findings" aria-selected="false">Findings</button>
-            <button type="button" role="tab" id="tab-agent" aria-selected="false">Agent</button>
+          <div class="tabs" role="tablist" aria-label="Inspector views">
+            <button type="button" role="tab" id="tab-selection" aria-controls="pane-inspector" aria-selected="true" tabindex="0">Selection</button>
+            <button type="button" role="tab" id="tab-table" aria-controls="pane-inspector" aria-selected="false" tabindex="-1">Table</button>
+            <button type="button" role="tab" id="tab-compare" aria-controls="pane-compare" aria-selected="false" tabindex="-1">Compare</button>
+            <button type="button" role="tab" id="tab-filters" aria-controls="pane-filters" aria-selected="false" tabindex="-1">Filters</button>
+            <button type="button" role="tab" id="tab-findings" aria-controls="pane-findings" aria-selected="false" tabindex="-1">Findings</button>
+            <button type="button" role="tab" id="tab-agent" aria-controls="pane-agent" aria-selected="false" tabindex="-1">Agent</button>
           </div>
           <button type="button" class="icon-button expand-panel" id="expand-inspector" aria-label="Expand inspector panel" title="Expand panel" aria-pressed="false">
             <svg class="expand-icon expand-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>
@@ -160,14 +160,14 @@
           </button>
         </div>
 
-        <div class="tab-panel" id="pane-inspector"></div>
+        <div class="tab-panel" id="pane-inspector" role="tabpanel" aria-labelledby="tab-selection" tabindex="0"></div>
 
-        <div class="tab-panel" id="pane-agent" hidden></div>
-        <div class="tab-panel" id="pane-compare" hidden></div>
-        <div class="tab-panel" id="pane-filters" hidden>
+        <div class="tab-panel" id="pane-agent" role="tabpanel" aria-labelledby="tab-agent" tabindex="0" hidden></div>
+        <div class="tab-panel" id="pane-compare" role="tabpanel" aria-labelledby="tab-compare" tabindex="0" hidden></div>
+        <div class="tab-panel" id="pane-filters" role="tabpanel" aria-labelledby="tab-filters" tabindex="0" hidden>
           <div class="panel-subhead"><h3>Explore and filter</h3></div>
           <form class="filter-form" id="filters-form">
-            <label class="control"><span>Population</span><select name="population"><option value="">Any population</option></select></label>
+            <label class="control"><span>Population</span><input type="search" name="population" list="population-options" placeholder="Search any population" autocomplete="off" /></label>
             <label class="control"><span>Locality</span><select name="locality"><option value="">Any locality</option></select></label>
             <label class="control"><span>Publication</span><select name="publication"><option value="">Any publication</option></select></label>
             <label class="control"><span>Date method</span><select name="dateMethod"><option value="">Any date method</option></select></label>
@@ -200,47 +200,56 @@
           </form>
         </div>
 
-        <div class="tab-panel research-pane" id="pane-findings" hidden>
-          <div id="sets-list"></div>
-          <div id="notes-list"></div>
+        <div class="tab-panel research-pane" id="pane-findings" role="tabpanel" aria-labelledby="tab-findings" tabindex="0" hidden>
+          <section class="research-section" aria-labelledby="cohorts-title">
+            <div class="panel-subhead"><h3 id="cohorts-title">Cohorts</h3></div>
+            <div id="sets-list"></div>
+            <form id="save-set-form" class="compact-form">
+              <label class="control"><span>Save current selection</span><input name="name" placeholder="Cohort name" required maxlength="60" /></label>
+              <button type="submit">Save</button>
+            </form>
+          </section>
 
-          <form id="save-set-form" class="compact-form">
-            <label class="control"><span>Save current selection</span><input name="name" placeholder="Cohort name" required maxlength="60" /></label>
-            <button type="submit">Save</button>
-          </form>
+          <section class="research-section" aria-labelledby="findings-title">
+            <div class="panel-subhead"><h3 id="findings-title">Findings</h3></div>
+            <div id="notes-list"></div>
 
-          <form id="note-form" class="note-form">
-            <label class="control"><span>Finding</span><input name="text" placeholder="Write an observation…" required maxlength="600" /></label>
-            <select name="kind" aria-label="Finding type"><option value="observation">Observation</option><option value="hypothesis">Hypothesis</option><option value="caveat">Caveat</option></select>
-            <select name="status" aria-label="Finding status"><option value="open">Open</option><option value="supported">Supported</option><option value="rejected">Rejected</option></select>
-            <input name="tags" placeholder="tags, comma-separated" aria-label="Finding tags" />
-            <button type="submit">Add</button>
-          </form>
+            <form id="note-form" class="note-form">
+              <label class="control"><span>Finding</span><input name="text" placeholder="Write an observation…" required maxlength="600" /></label>
+              <select name="kind" aria-label="Finding type"><option value="observation">Observation</option><option value="hypothesis">Hypothesis</option><option value="caveat">Caveat</option></select>
+              <select name="status" aria-label="Finding status"><option value="open">Open</option><option value="supported">Supported</option><option value="rejected">Rejected</option></select>
+              <input name="tags" placeholder="tags, comma-separated" aria-label="Finding tags" />
+              <button type="submit">Add</button>
+            </form>
+          </section>
 
-          <!--
-            One flow deliberately uses WebMCP's declarative form API rather than the
-            imperative one: the same <form> a person submits is also the tool the agent
-            calls, and `event.agentInvoked` tells the handler which of the two happened.
-          -->
-          <form
-            id="export-form"
-            toolname="export_data"
-            tooldescription="Export the current selection, visible samples, or a saved cohort as a local CSV or JSON file through the visible export form."
-            action="#export"
-          >
-            <label class="control">
-              <span>Export selection</span>
-              <input
-                type="text"
-                name="filename"
-                value="paleoscope-selection"
-                toolparamdescription="Base name for the downloaded CSV file, without an extension."
-              />
-            </label>
-            <label class="control"><span>Scope</span><select name="scope" id="export-scope"><option value="selection">Selection</option><option value="visible">Visible</option></select></label>
-            <label class="control"><span>Format</span><select name="format"><option value="csv">CSV</option><option value="json">JSON</option></select></label>
-            <button type="submit">Download</button>
-          </form>
+          <section class="research-section" aria-labelledby="export-title">
+            <div class="panel-subhead"><h3 id="export-title">Export</h3></div>
+            <!--
+              One flow deliberately uses WebMCP's declarative form API rather than the
+              imperative one: the same <form> a person submits is also the tool the agent
+              calls, and `event.agentInvoked` tells the handler which of the two happened.
+            -->
+            <form
+              id="export-form"
+              toolname="export_data"
+              tooldescription="Export the current selection, visible samples, or a saved cohort as a local CSV or JSON file through the visible export form."
+              action="#export"
+            >
+              <label class="control">
+                <span>Export selection</span>
+                <input
+                  type="text"
+                  name="filename"
+                  value="paleoscope-selection"
+                  toolparamdescription="Base name for the downloaded CSV file, without an extension."
+                />
+              </label>
+              <label class="control"><span>Scope</span><select name="scope" id="export-scope"><option value="selection">Selection</option><option value="visible">Visible</option></select></label>
+              <label class="control"><span>Format</span><select name="format"><option value="csv">CSV</option><option value="json">JSON</option></select></label>
+              <button type="submit">Download</button>
+            </form>
+          </section>
         </div>
       </aside>
     </main>

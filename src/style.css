@@ -40,8 +40,23 @@
   --critical: #d03b3b;
 
   --radius: 10px;
+  --radius-sm: 7px;
   --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 4%);
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+  /* One head height for every panel, so the top row of the grid lines up. */
+  --head-h: 33px;
+  /* Three control sizes; nothing in the app should invent a fourth. */
+  --control-h: 30px;
+  --control-h-sm: 24px;
+  --control-h-lg: 34px;
+  --ease: 130ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Interaction tints, derived from the surfaces so both themes stay in step. */
+  --hover: color-mix(in oklab, var(--text-primary) 6%, var(--surface-2));
+  --active: color-mix(in oklab, var(--text-primary) 11%, var(--surface-2));
+  --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
+  --on-accent: #fff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -75,6 +90,9 @@
     --age-5: #b7d3f6;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+
+    --hover: color-mix(in oklab, var(--text-primary) 9%, var(--surface-2));
+    --active: color-mix(in oklab, var(--text-primary) 15%, var(--surface-2));
   }
 }
 
@@ -108,6 +126,9 @@
   --age-5: #b7d3f6;
 
   --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+
+  --hover: color-mix(in oklab, var(--text-primary) 9%, var(--surface-2));
+  --active: color-mix(in oklab, var(--text-primary) 15%, var(--surface-2));
 }
 
 * { box-sizing: border-box; }
@@ -142,6 +163,17 @@ p { margin: 0; }
   padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-1);
+  /* Stacked, the page scrolls; the basis and Clear filters must stay reachable. */
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand { display: flex; align-items: baseline; gap: 8px; }
+
+/* Below this the label is redundant — the options all read "… Eurasian", "Global". */
+@media (width < 900px) {
+  .header-controls .control > span { display: none; }
 }
 
 .header-controls {
@@ -214,31 +246,100 @@ select, input:not([type]), input[type="text"], input[type="number"], input[type=
   color: var(--text-primary);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   padding: 5px 9px;
-  min-height: 30px;
+  min-height: var(--control-h);
+  transition: background var(--ease), border-color var(--ease), color var(--ease);
 }
 
-button { cursor: pointer; }
-button:hover:not(:disabled) { border-color: var(--text-muted); }
+:is(select, input, .file-button):hover:not(:disabled) { border-color: var(--text-muted); }
+
+/* Chrome paints two UA widgets inside a search field bound to a datalist: a dropdown
+   triangle and a clear button, both in its own colours, which read as foreign next to
+   the panel's controls. Drop the triangle — typing already surfaces the suggestions —
+   and redraw the clear button in the theme's muted ink.
+   `!important` is load-bearing: these live in the input's UA shadow tree, whose own
+   styles otherwise win over author rules that reach into it. */
+input[list]::-webkit-calendar-picker-indicator { display: none !important; }
+
+input[type="search"] {
+  --clear-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 2.5 9.5 9.5M9.5 2.5 2.5 9.5' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 11px !important;
+  height: 11px !important;
+  margin-left: 4px !important;
+  cursor: pointer;
+  background-color: var(--text-muted) !important;
+  -webkit-mask: var(--clear-glyph) center / contain no-repeat;
+  mask: var(--clear-glyph) center / contain no-repeat;
+  transition: background-color var(--ease);
+}
+
+input[type="search"]:hover::-webkit-search-cancel-button,
+input[type="search"]:focus::-webkit-search-cancel-button {
+  background-color: var(--text-primary) !important;
+}
+
+button, .file-button, summary, [role="tab"] { cursor: pointer; }
+
+button:hover:not(:disabled), .file-button:hover, .column-picker summary:hover {
+  border-color: var(--text-muted);
+  background: var(--hover);
+}
+
+button:active:not(:disabled), .file-button:active { background: var(--active); }
 button:disabled { opacity: 0.45; cursor: default; }
-button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:focus-visible {
+
+/* One focus ring for every focusable thing, including the ones that carry no border. */
+:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+::selection { background: var(--accent-soft); }
+
+a { color: var(--accent); }
+
+/* The accent-filled call to action. Exactly one per form. */
+.button-primary,
+#pane-filters button[type="submit"],
+:is(#pane-compare, #pane-findings)
+  :is(.compare-form, .profile-form, .compact-form, .note-form, #export-form) button {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.button-primary:hover:not(:disabled),
+#pane-filters button[type="submit"]:hover:not(:disabled),
+:is(#pane-compare, #pane-findings)
+  :is(.compare-form, .profile-form, .compact-form, .note-form, #export-form)
+  button:hover:not(:disabled) {
+  border-color: color-mix(in oklab, black 14%, var(--accent));
+  background: color-mix(in oklab, black 14%, var(--accent));
 }
 
 .agent-status {
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   font-size: 12px;
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 4px 11px 4px 9px;
   background: var(--surface-2);
-  margin-left: 8px;
-  margin-right: 6px;
+}
+
+.agent-status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .agent-status[hidden] { display: none; }
@@ -255,15 +356,40 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 
 .info-dialog {
   width: min(560px, calc(100vw - 32px));
+  max-height: min(85vh, 780px);
+  overflow: auto;
   padding: 0;
   color: var(--text-primary);
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--axis) transparent;
 }
 
 .info-dialog::backdrop { background: rgb(0 0 0 / 42%); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .info-dialog[open] { animation: dialog-in 160ms cubic-bezier(0.2, 0, 0, 1); }
+  .info-dialog[open]::backdrop { animation: backdrop-in 160ms ease-out; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+}
+
+/* The head stays put while a long body scrolls under it. */
+.info-dialog-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-1);
+}
 
 .info-dialog-head {
   display: flex;
@@ -281,7 +407,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 }
 
 .dialog-close {
-  min-height: 26px;
+  min-height: 28px;
+  min-width: 28px;
   padding: 0 7px;
   font-size: 18px;
   line-height: 1;
@@ -311,6 +438,10 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 .workspace-body #report-form .control { flex: 1; }
 .workspace-body #report-form input { width: 100%; }
 .file-button { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+
+/* Both dialog bodies are grids, so a lone control would otherwise stretch edge to edge. */
+.info-dialog-body > button,
+.workspace-body section > .file-button { justify-self: start; }
 .file-button input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
 
 @media (width < 720px) {
@@ -328,7 +459,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   --fr-b: 1.15fr;
   --fr-top: 1fr;
   --fr-bottom: 0.42fr;
-  --side-w: 380px;
+  --side-w: 420px;
   --split: 10px;
 
   flex: 1;
@@ -404,8 +535,17 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 
 @media (width < 1180px) {
   .app-grid {
+    /*
+      Stacked, the grid is taller than the viewport and the page scrolls. Keeping the
+      viewport-height constraint here squeezed the `auto` sidebar row to nothing, which
+      hid the whole inspector on narrow screens.
+    */
+    flex: none;
+    min-height: auto;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 62vh 62vh 26vh auto;
+    /* The inspector keeps its own scroller, so it gets a height rather than growing to
+       4,000px and burying the tab strip. */
+    grid-template-rows: 62vh 62vh 26vh 80vh;
     grid-template-areas: "slot1" "slot2" "slot3" "slot4";
     gap: 12px;
   }
@@ -432,7 +572,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px;
+  flex: none;
+  min-height: var(--head-h);
+  padding: 0 8px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -493,6 +635,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 .side-head {
   display: flex;
   align-items: center;
+  flex: none;
+  min-height: var(--head-h);
   border-bottom: 1px solid var(--border);
 }
 
@@ -500,14 +644,19 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   flex: 1;
   min-width: 0;
   display: flex;
-  gap: 2px;
-  padding: 4px 6px 0;
+  gap: 0;
+  padding: 4px 4px 0;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
 }
+
+[role="tab"] { scroll-snap-align: start; }
 
 .expand-panel {
   flex: none;
-  margin: 0 6px;
+  margin: 0 4px;
   border-color: transparent;
   background: none;
   color: var(--text-muted);
@@ -519,14 +668,23 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 .expand-panel[aria-pressed="true"] .expand-icon-close { display: block; }
 
 [role="tab"] {
-  min-height: 26px;
+  flex: none;
+  min-height: 25px;
+  font-size: 12px;
   background: none;
   border: 1px solid transparent;
   border-bottom: none;
-  border-radius: 7px 7px 0 0;
-  color: var(--text-secondary);
-  padding: 3px 9px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--text-muted);
+  padding: 3px 7px;
   margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+[role="tab"]:hover:not([aria-selected="true"]) {
+  background: var(--hover);
+  border-color: transparent;
+  color: var(--text-primary);
 }
 
 [role="tab"][aria-selected="true"] {
@@ -536,11 +694,23 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   font-weight: 600;
 }
 
+
 .tab-panel {
   flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 12px;
+  scroll-behavior: smooth;
+}
+
+.tab-panel,
+.table-scroll,
+.history,
+.column-picker > div,
+.call pre,
+.agent-view .grid {
+  scrollbar-width: thin;
+  scrollbar-color: var(--axis) transparent;
 }
 
 .tab-panel[hidden] { display: none; }
@@ -562,33 +732,12 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 #pane-filters select {
   width: 100%;
   min-width: 0;
-  min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-2);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 13px;
-  appearance: auto;
+  min-height: var(--control-h-lg);
 }
 
 #pane-filters button {
-  min-height: 32px;
-  padding: 5px 11px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-2);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-#pane-filters button[type="submit"] {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: white;
+  min-height: var(--control-h-lg);
+  padding: 5px 13px;
 }
 
 #pane-filters input[type="checkbox"] {
@@ -613,11 +762,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 
 .panel-subhead {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
   gap: 10px;
   margin: 0 0 8px;
 }
+
 
 .panel-subhead:not(:first-child) { margin-top: 18px; }
 
@@ -630,7 +779,23 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   padding: 1px 8px;
 }
 
-.empty { display: grid; gap: 6px; padding: 22px 4px; }
+.empty {
+  display: grid;
+  gap: 6px;
+  max-width: 46ch;
+  padding: 20px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.empty > p:first-child { font-weight: 600; }
+
+.notes li.notes-empty {
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  background: none;
+}
 
 .cards {
   display: grid;
@@ -656,6 +821,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   background: var(--surface-2);
 }
 
+.card { transition: border-color var(--ease); }
+.card:hover { border-color: var(--text-muted); }
 .card.is-focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
 .card-id {
@@ -674,7 +841,10 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
   text-underline-offset: 2px;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
 }
+
+.card-id:hover { text-decoration-color: var(--accent); background: none; }
 
 .card-population {
   min-width: 0;
@@ -741,7 +911,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, [role="tab"]:fo
 .column-picker > div { position: absolute; z-index: 8; right: 0; top: calc(100% + 4px); display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; width: 270px; max-height: 260px; overflow: auto; padding: 9px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); }
 .column-picker label { display: flex; gap: 5px; align-items: center; white-space: nowrap; font-size: 11px; }
 .sort-button { min-height: 0; padding: 0; border: 0; background: none; color: inherit; font-size: inherit; font-weight: inherit; }
-.sort-button:hover:not(:disabled) { border: 0; color: var(--text-primary); }
+.sort-button:hover:not(:disabled) { border: 0; background: none; color: var(--text-primary); }
 .load-more { width: 100%; margin-top: 8px; }
 
 table { border-collapse: collapse; font-size: 11.5px; width: 100%; }
@@ -758,10 +928,13 @@ th, td {
 th {
   position: sticky;
   top: 0;
+  z-index: 1;
   background: var(--surface-2);
   color: var(--text-muted);
   font-weight: 600;
   font-size: 11px;
+  /* A sticky cell's own border scrolls away with it; an inset shadow does not. */
+  box-shadow: inset 0 -1px var(--border);
 }
 
 th { padding-right: 12px; }
@@ -799,18 +972,30 @@ th { padding-right: 12px; }
   background: var(--border);
 }
 
+.column-resizer:hover, .column-resizer:active { background: transparent; border: 0; }
+
 .column-resizer:hover::after,
 .column-resizer:focus-visible::after { background: var(--accent); }
 
-tbody tr:hover { background: var(--surface-2); cursor: pointer; }
+tbody tr { transition: background var(--ease); }
+tbody tr:hover { background: var(--hover); cursor: pointer; }
 tbody tr.is-focused { outline: 1px solid var(--accent); outline-offset: -1px; }
+tbody tr:last-child td { border-bottom: none; }
 td:first-child { font-family: var(--mono); }
 
 .research-pane {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   align-content: start;
 }
+
+/*
+  The sidebar can be expanded to most of the window. Without a ceiling these forms
+  stretch a single-line text field across 900px, which reads as a bug rather than space.
+*/
+.research-section { display: grid; gap: 9px; max-width: 640px; }
+.research-section + .research-section { border-top: 1px solid var(--border); padding-top: 18px; }
+.research-section .panel-subhead { margin: 0; }
 
 :is(#pane-compare, #pane-findings) .control { gap: 5px; }
 :is(#pane-compare, #pane-findings) .control > span {
@@ -822,27 +1007,14 @@ td:first-child { font-family: var(--mono); }
   :is(.compare-form, .profile-form, .compact-form, .note-form, #export-form)
   :is(input, select) {
   min-width: 0;
-  min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-2);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 13px;
+  min-height: var(--control-h-lg);
 }
 
 :is(#pane-compare, #pane-findings)
   :is(.compare-form, .profile-form, .compact-form, .note-form, #export-form)
   button {
-  min-height: 34px;
-  padding: 5px 11px;
-  border: 1px solid var(--accent);
-  border-radius: 7px;
-  background: var(--accent);
-  color: white;
-  font: inherit;
-  font-size: 13px;
+  min-height: var(--control-h-lg);
+  padding: 5px 13px;
 }
 
 #export-form, .compact-form { display: flex; align-items: flex-end; gap: 8px; }
@@ -869,17 +1041,24 @@ input:tool-submit-active { border-color: var(--accent); }
   align-items: center;
   gap: 8px;
   font-size: 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--age-3);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  background: var(--surface-2);
 }
 
-.saved-list button { padding: 1px 7px; min-height: 22px; font-size: 11px; }
+.saved-list button { padding: 1px 8px; min-height: var(--control-h-sm); font-size: 11px; }
 .saved-list .saved-name { flex: 1; }
 
 /* --- compare and population profile -------------------------------------- */
 
+/* Same ceiling as the research sections: a wide sidebar must not stretch a field. */
+.compare-form, .profile-form, .compare-actions { max-width: 640px; }
 .compare-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 7px; align-items: end; }
 .compare-form select { width: 100%; }
 .compare-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
-.compare-actions button { min-height: 25px; padding: 2px 8px; font-size: 11px; }
+.compare-actions button { min-height: var(--control-h-sm); padding: 2px 9px; font-size: 11px; }
 .compare-result, .profile-result { display: grid; gap: 10px; }
 .compare-legend { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; color: var(--text-secondary); }
 .compare-legend [data-series] { border-radius: 999px; color: white; font-weight: 700; padding: 1px 7px; }
@@ -915,18 +1094,21 @@ input:tool-submit-active { border-color: var(--accent); }
   padding: 2px 7px;
   border-radius: 6px;
   border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
   background: var(--surface-2);
   color: var(--text-secondary);
 }
 
-.tool-surface li[data-layer="read"],
-.tool-surface li[data-layer="find"] { border-left: 3px solid var(--age-2); }
-.tool-surface li[data-layer="set"],
-.tool-surface li[data-layer="clear"] { border-left: 3px solid var(--age-4); }
-.tool-surface li[data-layer="select"],
-.tool-surface li[data-layer="save"],
-.tool-surface li[data-layer="focus"] { border-left: 3px solid var(--accent); }
-.tool-surface li[data-layer="explain"] { border-left: 3px solid var(--good); }
+/*
+  One colour per family, and these five are the whole set `layerOf` in agent/activity.ts
+  can emit. The two read-only families sit at the light end of the age ramp, the two that
+  change what everyone is looking at sit at the dark end and on the selection accent.
+*/
+.tool-surface li[data-layer="read"] { border-left-color: var(--age-2); }
+.tool-surface li[data-layer="find"] { border-left-color: var(--age-3); }
+.tool-surface li[data-layer="view"] { border-left-color: var(--age-4); }
+.tool-surface li[data-layer="sets"] { border-left-color: var(--accent); }
+.tool-surface li[data-layer="explain"] { border-left-color: var(--good); }
 
 @keyframes flash {
   from { background: var(--accent); color: var(--surface-1); }
@@ -1003,7 +1185,11 @@ input:tool-submit-active { border-color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .tool-surface li.flash { animation: none; }
-  * { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
 }
 
 /* --- shared session history ------------------------------------------------ */
@@ -1064,12 +1250,18 @@ input:tool-submit-active { border-color: var(--accent); }
 
 .notes li button {
   flex: none;
-  min-height: 20px;
-  padding: 0 6px;
+  min-height: var(--control-h-sm);
+  padding: 0 7px;
   line-height: 1;
-  border: none;
+  border: 1px solid transparent;
   background: none;
   color: var(--text-muted);
+}
+
+.notes li button:hover:not(:disabled) {
+  border-color: var(--border);
+  background: var(--hover);
+  color: var(--text-primary);
 }
 
 .note-editor {
@@ -1085,9 +1277,9 @@ input:tool-submit-active { border-color: var(--accent); }
 .notes li .note-editor button {
   border: 1px solid var(--border);
   border-radius: 5px;
-  padding: 0 7px;
-  min-height: 22px;
-  background: var(--surface);
+  padding: 0 8px;
+  min-height: var(--control-h-sm);
+  background: var(--surface-2);
   color: var(--text-secondary);
 }
 
@@ -1100,12 +1292,6 @@ input:tool-submit-active { border-color: var(--accent); }
   padding: 0 4px;
   margin-right: 5px;
 }
-
-.tool-surface li[data-layer="read"] { border-left: 3px solid var(--age-2); }
-.tool-surface li[data-layer="find"] { border-left: 3px solid var(--age-4); }
-.tool-surface li[data-layer="view"] { border-left: 3px solid var(--present); }
-.tool-surface li[data-layer="sets"] { border-left: 3px solid var(--accent); }
-.tool-surface li[data-layer="explain"] { border-left: 3px solid var(--good); }
 
 /* --- the agent's view of the plot ------------------------------------------ */
 
@@ -1126,7 +1312,7 @@ input:tool-submit-active { border-color: var(--accent); }
   white-space: pre;
 }
 
-#render-agent-view { min-height: 24px; padding: 2px 9px; font-size: 11px; }
+#render-agent-view { min-height: var(--control-h-sm); padding: 2px 9px; font-size: 11px; }
 
 
 /* --- panel grip and rearranging -------------------------------------------- */
@@ -1145,7 +1331,7 @@ input:tool-submit-active { border-color: var(--accent); }
   touch-action: none;
 }
 
-.grip:hover { color: var(--text-primary); background: none; }
+.grip:hover, .grip:active { color: var(--text-primary); background: none; }
 .grip:active { cursor: grabbing; }
 
 .tabs .grip { align-self: center; margin: 0 2px 2px 2px; }
@@ -1171,13 +1357,13 @@ body.is-rearranging .layer { pointer-events: none; }
 .panel-action {
   margin-left: auto;
   flex: none;
-  min-height: 22px;
-  padding: 1px 8px;
+  min-height: var(--control-h-sm);
+  padding: 1px 9px;
   font-size: 11px;
   color: var(--text-muted);
 }
 
-.panel-action:hover { color: var(--text-primary); }
+.panel-action:hover:not(:disabled) { color: var(--text-primary); }
 
 
 
@@ -1193,4 +1379,4 @@ body.is-rearranging .layer { pointer-events: none; }
   text-underline-offset: 2px;
 }
 
-.inline-action:hover { border: none; opacity: 0.8; }
+.inline-action:hover { border: none; background: none; opacity: 0.8; }

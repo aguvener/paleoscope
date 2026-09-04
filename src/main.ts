@@ -140,8 +140,13 @@ const tabs: Record<Tab, HTMLButtonElement> = {
 
 function selectTab(tab: Tab): void {
   for (const [name, button] of Object.entries(tabs)) {
-    button.setAttribute('aria-selected', String(name === tab));
+    const active = name === tab;
+    button.setAttribute('aria-selected', String(active));
+    // Roving tabindex: one stop for the whole strip, then arrow keys inside it.
+    button.tabIndex = active ? 0 : -1;
   }
+  // Two tabs share one panel, so the panel names whichever of them is current.
+  element('pane-inspector').setAttribute('aria-labelledby', `tab-${tab === 'table' ? 'table' : 'selection'}`);
   element('pane-inspector').hidden = tab !== 'selection' && tab !== 'table';
   element('pane-agent').hidden = tab !== 'agent';
   element('pane-compare').hidden = tab !== 'compare';
@@ -151,9 +156,33 @@ function selectTab(tab: Tab): void {
   if (tab === 'compare') compare.render();
 }
 
+const TAB_ORDER = Object.keys(tabs) as Tab[];
+
 for (const [name, button] of Object.entries(tabs)) {
   button.addEventListener('click', () => selectTab(name as Tab));
 }
+
+/**
+ * A tablist is one tab stop. Without arrow keys the six views are only reachable by
+ * pointer, and the strip scrolls horizontally once the sidebar is narrow.
+ */
+element('panel-side').querySelector('.tabs')?.addEventListener('keydown', (event) => {
+  const key = (event as KeyboardEvent).key;
+  const current = TAB_ORDER.findIndex((name) => tabs[name].getAttribute('aria-selected') === 'true');
+  if (current < 0) return;
+  const next =
+    key === 'ArrowRight' ? (current + 1) % TAB_ORDER.length
+    : key === 'ArrowLeft' ? (current - 1 + TAB_ORDER.length) % TAB_ORDER.length
+    : key === 'Home' ? 0
+    : key === 'End' ? TAB_ORDER.length - 1
+    : -1;
+  if (next < 0) return;
+  event.preventDefault();
+  const name = TAB_ORDER[next]!;
+  selectTab(name);
+  tabs[name].focus();
+  tabs[name].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+});
 
 // --- header controls -------------------------------------------------------
 
@@ -292,10 +321,16 @@ function renderSets(): void {
   }
   const saveButton = element<HTMLButtonElement>('save-set-form').querySelector('button');
   if (saveButton) saveButton.disabled = store.selection.size === 0;
-  if (entries.length === 0) return;
+  if (entries.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = store.selection.size > 0
+      ? 'No cohorts yet. Name the current selection to keep it.'
+      : 'No cohorts yet. Select individuals on a plot, then name the selection to keep it.';
+    host.append(empty);
+    return;
+  }
 
-  const heading = document.createElement('h3');
-  heading.textContent = 'Sets';
   const list = document.createElement('ul');
   list.className = 'saved-list';
   for (const entry of entries.slice(-8)) {
@@ -328,7 +363,7 @@ function renderSets(): void {
     item.append(remove);
     list.append(item);
   }
-  host.append(heading, list);
+  host.append(list);
 }
 
 let noteQuery = '';
@@ -436,20 +471,29 @@ function renderNoteList(): void {
   const previous = host.querySelector('.notes');
   if (store.notes.length === 0) {
     host.innerHTML = '';
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent =
+      'No findings yet. Write down what you notice; the agent writes into the same list.';
+    host.append(empty);
     return;
   }
   if (!host.contains(noteSearch)) {
     host.innerHTML = '';
-    const heading = document.createElement('h3');
-    heading.textContent = 'Findings';
     noteSearch.value = noteQuery;
-    host.append(heading, noteSearch);
+    host.append(noteSearch);
   }
   const list = document.createElement('ul');
   list.className = 'notes';
   const needle = noteQuery.trim().toLowerCase();
   const notes = store.notes.filter((note) => matchesNoteQuery(note, needle));
   for (const note of notes.slice(-20)) list.append(noteItem(note));
+  if (notes.length === 0) {
+    const none = document.createElement('li');
+    none.className = 'notes-empty';
+    none.textContent = `No finding matches “${noteQuery.trim()}”.`;
+    list.append(none);
+  }
   if (previous) previous.replaceWith(list);
   else host.append(list);
 }

@@ -35,8 +35,10 @@ export class FiltersPanel {
   populateSuggestions(force = false): void {
     const data = this.#store.dataset;
     if (!data) return;
+    // `population` is deliberately absent: it is a search input backed by the
+    // `population-options` datalist below, because a <select> can only offer an
+    // exact pick and the filter itself matches substrings.
     const mapping: [TextFilterKey, keyof typeof data.dict][] = [
-      ['population', 'group'],
       ['locality', 'locality'],
       ['publication', 'publication'],
       ['dateMethod', 'dateMethod'],
@@ -61,7 +63,7 @@ export class FiltersPanel {
     if (populationSuggestions instanceof HTMLDataListElement) {
       if (force) populationSuggestions.innerHTML = '';
       if (populationSuggestions.children.length === 0) {
-        for (const value of data.dict.group.filter(Boolean).toSorted().slice(0, 1500)) {
+        for (const value of data.dict.group.filter(Boolean).toSorted()) {
           const option = document.createElement('option');
           option.value = value;
           populationSuggestions.append(option);

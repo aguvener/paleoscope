@@ -1,8 +1,18 @@
 import { describeSample } from '../analysis.ts';
 import type { Store } from '../store.ts';
+import type { SelectionSource } from '../types.ts';
 
 const MAX_CARDS = 60;
+
 const TABLE_PAGE = 300;
+
+/** How the current selection came about, phrased for a reader rather than as a state name. */
+const SELECTION_ORIGIN: Record<SelectionSource, string> = {
+  agent: 'selected by the agent',
+  lasso: 'lassoed on a plot',
+  click: 'picked point by point',
+  restore: 'restored',
+};
 
 const TABLE_COLUMNS = [
   { key: 'geneticId', label: 'Genetic ID' },
@@ -108,8 +118,7 @@ export class Inspector {
     title.textContent = `${indices.length} selected`;
     const origin = document.createElement('span');
     origin.className = 'pill';
-    origin.textContent =
-      store.selectionSource === 'agent' ? 'selected by the agent' : `by ${store.selectionSource}`;
+    origin.textContent = SELECTION_ORIGIN[store.selectionSource];
     head.append(title, origin);
     this.#host.append(head);
 

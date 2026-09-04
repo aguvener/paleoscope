@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "paleoscope",
+  "compatibility_date": "2026-09-04",
+  "assets": {
+    // Vite copies `public/_headers` into `dist/`; Workers parses it there and applies
+    // the Origin-Agent-Cluster / Permissions-Policy headers WebMCP requires.
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
